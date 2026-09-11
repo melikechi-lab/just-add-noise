@@ -1,0 +1,17 @@
+# Feature selection with false discovery control
+ipss==1.1.11
+
+# Core scientific stack (known-working versions)
+numpy==2.2.6
+pandas==2.3.2
+scipy==1.16.1
+scikit-learn==1.6.1
+xgboost==3.0.5
+matplotlib==3.10.6
+
+# Real-data applications (OpenML / PMLB downloads)
+openml==0.15.1
+pmlb==1.0.1.post3
+
+# R interface, required only for the CForest baseline (Table 1, Table S1, Fig. 4)
+# rpy2==3.5.16
