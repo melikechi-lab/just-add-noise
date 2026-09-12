@@ -16,7 +16,7 @@ python -m pip install -r requirements.txt
 ```
 
 The CForest baseline (Table 1, Table S1, Fig. 4) also needs R with `partykit`,
-`libcoin`, and `mvtnorm` installed; every script skips it gracefully if R is absent.
+`libcoin`, and `mvtnorm` installed; every script skips it if R is absent.
 
 ---
 
