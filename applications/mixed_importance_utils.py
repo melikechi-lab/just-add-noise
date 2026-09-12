@@ -331,8 +331,14 @@ def run_importance_methods(
     n_jobs: int,
     methods: Sequence[str] = METHODS,
 ) -> tuple[pd.DataFrame, dict[str, float]]:
-    """Run the selected full-data importance methods (without IPSS)."""
-    from methods.jitter import jitterRF, jitterXGB, run_cforest, run_ufi
+    """Run the selected full-data importance methods (without IPSS).
+
+    A requested method that cannot run in this environment (currently only
+    ``cforest`` without rpy2/R) is skipped with a printed notice rather than
+    raising; the returned frame and ``runtimes`` only cover the methods that
+    actually ran.
+    """
+    from methods.jitter import jitterRF, jitterXGB, run_cforest, run_ufi, unavailable_methods
 
     methods = tuple(dict.fromkeys(methods))
     unknown = sorted(set(methods) - set(METHODS))
@@ -340,6 +346,14 @@ def run_importance_methods(
         raise ValueError(f"Unknown importance methods: {unknown}")
     if not methods:
         raise ValueError("At least one importance method must be selected")
+
+    unavailable = set(unavailable_methods())
+    for method in methods:
+        if method in unavailable:
+            print(f"Skipping {method}: not available in this environment (rpy2/R not installed).", flush=True)
+    methods = tuple(method for method in methods if method not in unavailable)
+    if not methods:
+        raise ValueError("None of the requested importance methods are available in this environment")
 
     X, y, cat_idx = _encode_dataset(dataset)
     # All observations are used for fitting because this experiment compares
@@ -501,10 +515,11 @@ def run_application(
     print(f"Saved importance and ranks: {importance_output}")
     print(f"Method runtimes (seconds): {runtimes}")
 
+    actual_methods = list(runtimes)
     top = min(args.top, len(ranking))
     columns = ["variable", "type"]
-    for method in selected_methods:
+    for method in actual_methods:
         columns.extend([f"{method}_importance", f"{method}_rank"])
-    sort_method = "rf" if "rf" in selected_methods else selected_methods[0]
+    sort_method = "rf" if "rf" in actual_methods else actual_methods[0]
     print(f"\nTop {top} variables, ordered by {sort_method} importance:")
     print(ranking.loc[: top - 1, columns].to_string(index=False))

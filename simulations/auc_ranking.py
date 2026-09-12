@@ -155,6 +155,8 @@ def save_combined_roc(
         ):
             tpr_by_method = scenario_curves[(dependence, signal_type)]
             for method_name in method_names:
+                if method_name not in tpr_by_method:
+                    continue
                 ax.plot(
                     FPR_GRID,
                     np.mean(tpr_by_method[method_name], axis=0),

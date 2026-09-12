@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import numpy as np
 
-from methods.jitter import jitterRF, jitterXGB, run_cforest, run_ufi
+from methods.jitter import jitterRF, jitterXGB, run_cforest, run_ufi, unavailable_methods
 
 
 # ----------------------------------------------------------------
@@ -57,7 +57,8 @@ ROC_STYLES = {
 
 
 def make_methods():
-    return {
+    """Return the method dict, dropping CForest if rpy2/R is not available."""
+    methods = {
         "RF": lambda X, y: jitterRF(
             X, y, task="regression", jitter_method=None, **RF_ARGS
         ),
@@ -110,6 +111,10 @@ def make_methods():
             max_depth=1,
         ),
     }
+    if "cforest" in unavailable_methods():
+        print("Skipping CForest: rpy2/R not available.", flush=True)
+        del methods["CForest"]
+    return methods
 
 
 def sample_true_features(trial):

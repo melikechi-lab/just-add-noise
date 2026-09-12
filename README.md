@@ -30,7 +30,8 @@ python split_points.py          # Figure 1
 
 Run scripts from within their own directory. A `*_study.py` / `run_*.py` script writes
 results next to itself; the paired `plot_*.py` / `report_*.py` script makes the figure
-or table.
+or table. See [REPRODUCTION.md](REPRODUCTION.md) for the full set of commands, one
+figure/table at a time.
 
 ---
 
@@ -59,8 +60,7 @@ or table.
 
 No data is stored here. The machine-learning and prediction datasets download
 automatically from OpenML and PMLB. The bladder cancer cohort needs a manual download
-from LinkedOmics — see the comment at the top of
-`applications/bladder_18m_survival_mirna_ordinal_stage.py`.
+from LinkedOmics — see [DATA.md](DATA.md) for what to download and where it goes.
 
 ---
 

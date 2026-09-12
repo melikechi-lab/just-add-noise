@@ -9,8 +9,8 @@ levels Stage_II, Stage_III, and Stage_IV. Age remains continuous alongside the
 complete bladder miRNA panel.
 
 RF, jittered RF, XGBoost, jittered XGBoost, depth-1 XGBoost (with and without
-one-time jitter), UFI, and CForest are all run over seeds 1, 2, 3, 4, and 5.
-IPSS is not run.
+one-time jitter), UFI, and CForest are all run over 50 seeds (1 through 50) by
+default. IPSS is not run.
 """
 
 from __future__ import annotations
@@ -65,7 +65,6 @@ STAGE_VARIABLE = 'pathologic_stage'
 
 # Depth-1 XGBoost variants, run in addition to the shared METHODS.
 STUMP_METHODS = ('xgb_stump', 'xgb_stump_one_time')
-ALL_METHODS = (*METHODS, *STUMP_METHODS)
 
 
 def prepare_dataset(correlation_threshold: float = 0.999) -> MixedDataset:
@@ -193,7 +192,7 @@ def build_parser() -> argparse.ArgumentParser:
         nargs='+',
         type=int,
         default=DEFAULT_SEEDS,
-        help='random seeds to run (default: 1 2 3 4 5)',
+        help='random seeds to run (default: 1 2 ... 50)',
     )
     parser.add_argument(
         '--correlation-threshold',
@@ -239,6 +238,10 @@ def run_seeded_importance(dataset: MixedDataset, args: argparse.Namespace) -> No
             n_jobs=args.n_jobs,
             methods=METHODS,
         )
+        # methods not available in this environment (e.g. cforest without
+        # rpy2/R) are dropped by run_importance_methods, so build the column
+        # list from what actually ran rather than the static METHODS tuple.
+        run_methods = tuple(runtimes)
 
         stump_importances, stump_runtimes = run_stump_methods(
             dataset=dataset,
@@ -254,7 +257,8 @@ def run_seeded_importance(dataset: MixedDataset, args: argparse.Namespace) -> No
         ranking = ranking.merge(stump_frame, on='variable', how='left')
         runtimes.update(stump_runtimes)
 
-        ranking = ranking.loc[:, ['variable', 'type', *_method_columns(ALL_METHODS)]]
+        seed_methods = (*run_methods, *STUMP_METHODS)
+        ranking = ranking.loc[:, ['variable', 'type', *_method_columns(seed_methods)]]
         ranking.insert(0, 'seed', seed)
         full_rankings.append(ranking)
 
@@ -262,7 +266,7 @@ def run_seeded_importance(dataset: MixedDataset, args: argparse.Namespace) -> No
         if len(stage_row) != 1:
             raise ValueError(f'Expected one {STAGE_VARIABLE} row in ranking output')
         stage_record = {'seed': seed, 'variable': STAGE_VARIABLE}
-        for method in ALL_METHODS:
+        for method in seed_methods:
             stage_record[f'{method}_importance'] = float(
                 stage_row[f'{method}_importance'].iloc[0]
             )
@@ -280,7 +284,7 @@ def run_seeded_importance(dataset: MixedDataset, args: argparse.Namespace) -> No
     print(f'Saved pathologic-stage rank summary: {STAGE_RANK_OUTPUT}')
 
     top = min(args.top, len(full_ranking))
-    columns = ['seed', 'variable', 'type', *_method_columns(ALL_METHODS)]
+    columns = ['seed', 'variable', 'type', *_method_columns(seed_methods)]
     print()
     print(f'Pathologic-stage ranks across {len(seeds)} seeds:')
     print(stage_ranking.to_string(index=False))
